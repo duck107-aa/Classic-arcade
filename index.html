@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Classic Arcade</title>
+<style>
+:root{--bg:#090d1b;--panel:#151c34;--panel2:#202a49;--cyan:#55e7ff;--pink:#ff62bd;--yellow:#ffd66b;--text:#f5f7ff;--muted:#aab4d2}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 15% 0%,#1c2850 0,#090d1b 48%);color:var(--text);font-family:system-ui,Segoe UI,Arial,sans-serif;min-height:100vh}
+header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px clamp(16px,4vw,48px);border-bottom:1px solid #ffffff18;background:#080c19cc;position:sticky;top:0;z-index:5;backdrop-filter:blur(12px)}
+.brand{font-size:clamp(20px,3vw,28px);font-weight:900;letter-spacing:1px}.brand span{color:var(--cyan)}.account{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+#signInBtn{background:#fff;color:#3c4043;border:1px solid #dadce0;border-radius:6px;min-height:40px;padding:0 16px;display:inline-flex;align-items:center;justify-content:center;gap:12px;font-family:Roboto,Arial,sans-serif;font-size:14px;font-weight:500;letter-spacing:.15px;box-shadow:0 1px 2px #0002;transition:background .15s,box-shadow .15s}
+#signInBtn:hover{background:#f8faff;box-shadow:0 1px 3px #0003;filter:none;transform:none}
+#signInBtn:active{background:#eee;box-shadow:none}
+.google-g{width:18px;height:18px;flex:none}
+button{border:0;border-radius:12px;padding:11px 16px;background:var(--cyan);color:#06101b;font-weight:800;cursor:pointer;transition:.15s transform,.15s filter}button:hover{filter:brightness(1.08);transform:translateY(-1px)}button:disabled{opacity:.5;cursor:not-allowed;transform:none}
+button.secondary{background:#303b60;color:var(--text)}button.pink{background:var(--pink);color:#230b1b}button.yellow{background:var(--yellow);color:#241900}
+#userStatus{font-size:13px;color:var(--muted)}main{max-width:1200px;margin:auto;padding:34px clamp(16px,4vw,48px) 60px}
+.hero{padding:30px 0 28px}.eyebrow{color:var(--cyan);font-size:12px;font-weight:900;letter-spacing:3px}.hero h1{font-size:clamp(34px,6vw,62px);line-height:1.02;margin:10px 0}.hero p{color:var(--muted);max-width:650px;line-height:1.6}
+.stats{display:flex;gap:12px;flex-wrap:wrap;margin-top:22px}.stat{background:#ffffff0b;border:1px solid #ffffff18;padding:10px 14px;border-radius:12px;color:var(--muted);font-size:13px}.stat b{color:white;font-size:17px;margin-left:5px}
+.sectionhead{display:flex;align-items:end;justify-content:space-between;gap:12px;margin:26px 0 14px}.sectionhead h2{margin:0;font-size:22px}.sectionhead span{color:var(--muted);font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}.game-card{background:linear-gradient(145deg,var(--panel2),var(--panel));border:1px solid #ffffff1c;border-radius:20px;padding:20px;min-height:205px;display:flex;flex-direction:column;position:relative;overflow:hidden}.game-card:after{content:"";position:absolute;width:130px;height:130px;border-radius:50%;background:var(--glow,#55e7ff);filter:blur(65px);opacity:.17;right:-35px;top:-30px}.game-icon{font-size:38px}.game-card h3{margin:12px 0 5px;font-size:20px}.game-card p{color:var(--muted);font-size:13px;line-height:1.5;margin:0 0 18px;flex:1}.game-card button{align-self:flex-start;position:relative;z-index:1}
+#gameScreen{display:none}.game-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:10px 0 18px}.game-top h2{margin:0}.game-shell{background:#070b17;border:1px solid #ffffff24;border-radius:20px;padding:14px;box-shadow:0 20px 70px #0007}
+canvas{display:block;width:100%;max-width:900px;height:auto;aspect-ratio:16/9;background:#050916;border-radius:12px;margin:auto;touch-action:none}.game-help{color:var(--muted);font-size:13px;text-align:center;line-height:1.6;padding:12px 8px 2px}
+.mobile-controls{display:none;justify-content:center;gap:10px;flex-wrap:wrap;padding-top:12px}.mobile-controls button{min-width:64px}
+.notice{border:1px solid #ffffff1c;background:#ffffff08;padding:14px 16px;border-radius:14px;color:var(--muted);font-size:13px;line-height:1.55;margin-top:24px}.notice b{color:var(--text)}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#202a49;color:white;padding:12px 18px;border-radius:12px;box-shadow:0 8px 30px #0008;display:none;z-index:10;font-size:14px}
+@media(max-width:650px){header{align-items:flex-start}.account{justify-content:flex-end}.mobile-controls{display:flex}.hero{padding-top:22px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">CLASSIC <span>ARCADE</span></div>
+  <div class="account">
+    <span id="userStatus">Not signed in · scores save on this device</span>
+    <button id="signInBtn" type="button" onclick="signIn()" aria-label="Sign in with Google">
+      <svg class="google-g" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.91c-.58 2.96-2.25 5.48-4.73 7.18l7.64 5.93c4.46-4.12 7.16-10.2 7.16-17.58z"/><path fill="#FBBC05" d="M10.53 28.59A14.4 14.4 0 0 1 9.75 24c0-1.59.27-3.13.76-4.59l-7.98-6.19A23.9 23.9 0 0 0 0 24c0 3.87.93 7.52 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.91-5.87l-7.64-5.93c-2.12 1.45-4.84 2.3-8.27 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+      <span>Sign in with Google</span>
+    </button>
+    <button id="signOutBtn" class="secondary" onclick="signOut()" style="display:none">Sign out</button>
+  </div>
+</header>
+<main>
+  <section id="homeScreen">
+    <div class="hero">
+      <p>A mini arcade packed with quick games. Play right in your browser, beat your personal bests, and sign in with Google to sync your scores across devices.</p>
+      <div class="stats">
+        <div class="stat">GAMES <b>4</b></div>
+        <div class="stat">YOUR TOTAL BEST <b id="totalBest">0</b></div>
+        <div class="stat">ACCOUNT <b id="syncLabel">Local</b></div>
+      </div>
+    </div>
+    <div class="sectionhead"><h2>Choose a game</h2><span>More games can be added later</span></div>
+    <div class="grid">
+      <article class="game-card" style="--glow:#55e7ff"><div class="game-icon">🏓</div><h3>Neon Pong</h3><p>A fast arcade classic. Keep the ball in play and outscore the CPU.</p><button onclick="startGame('pong')">Play Pong →</button></article>
+      <article class="game-card" style="--glow:#ff62bd"><div class="game-icon">🏎️</div><h3>Pixel Driver</h3><p>Dodge traffic, survive as long as you can, and rack up distance.</p><button class="pink" onclick="startGame('drive')">Start driving →</button></article>
+      <article class="game-card" style="--glow:#ffd66b"><div class="game-icon">🐍</div><h3>Snake</h3><p>Collect glowing food, grow longer, and avoid running into yourself.</p><button class="yellow" onclick="startGame('snake')">Play Snake →</button></article>
+      <article class="game-card" style="--glow:#9b83ff"><div class="game-icon">🧱</div><h3>Brick Breaker</h3><p>Move your paddle, bounce the ball, and clear the colorful bricks.</p><button class="secondary" onclick="startGame('breakout')">Break bricks →</button></article>
+    </div>
+    <div class="notice"><b>Google Drive sync:</b> Connect your Google account to sync your high scores using a private app-data file in Google Drive. No Firebase is used. A one-time Google OAuth client ID setup is required; until then, scores save locally in this browser.</div>
+  </section>
+
+  <section id="gameScreen">
+    <div class="game-top"><button class="secondary" onclick="goHome()">← Arcade</button><h2 id="gameTitle">Game</h2><div><span id="scoreText">Score: 0</span> &nbsp; <button class="secondary" onclick="restartGame()">Restart</button></div></div>
+    <div class="game-shell">
+      <canvas id="gameCanvas" width="900" height="506"></canvas>
+      <div class="game-help" id="gameHelp"></div>
+      <div class="mobile-controls" id="mobileControls"></div>
+    </div>
+  </section>
+  <footer style="text-align:center;color:var(--muted);font-size:11px;letter-spacing:.5px;padding:18px 0 4px">Made by Aaraiz (also AI)</footer>
+</main>
+<div id="toast"></div>
+
+<!-- Google Identity Services: Google Drive app-data sync, no Firebase. -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+// ONE-TIME SETUP (no Firebase):
+// 1) In https://console.cloud.google.com/ create/select a Google Cloud project.
+// 2) Enable the Google Drive API.
+// 3) Configure the OAuth consent screen (External / testing is fine for your test account).
+// 4) Create an OAuth Client ID -> Web application.
+// 5) Add your site's origin to Authorized JavaScript origins (e.g. https://your-site.com
+//    or http://localhost:8000). Open this HTML through that origin, not file://.
+// 6) Paste the OAuth Client ID below. The app only requests drive.appdata access.
+const GOOGLE_CLIENT_ID = "PASTE_YOUR_GOOGLE_OAUTH_CLIENT_ID";
+const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.appdata";
+let tokenClient=null, accessToken=null, driveFileId=null, googleConnected=false;
+const games=['pong','drive','snake','breakout'];
+let scores=JSON.parse(localStorage.getItem('pixelPlazaScores')||'{}');
+function updateAccount(){
+  document.getElementById('signInBtn').style.display=googleConnected?'none':'inline-block';
+  document.getElementById('signOutBtn').style.display=googleConnected?'inline-block':'none';
+  document.getElementById('userStatus').textContent=googleConnected?'Google Drive connected · scores syncing':'Not connected · scores save on this device';
+  document.getElementById('syncLabel').textContent=googleConnected?'Google Drive':'Local';
+  updateTotals();
+}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.display='block';clearTimeout(toast.timer);toast.timer=setTimeout(()=>t.style.display='none',2600);}
+function signIn(){
+  if(GOOGLE_CLIENT_ID==='PASTE_YOUR_GOOGLE_OAUTH_CLIENT_ID'){toast('Add your Google OAuth Client ID in the HTML setup section first.');return;}
+  if(!window.google?.accounts?.oauth2){toast('Google sign-in is still loading. Try again in a moment.');return;}
+  if(!tokenClient){tokenClient=google.accounts.oauth2.initTokenClient({client_id:GOOGLE_CLIENT_ID,scope:DRIVE_SCOPE,callback:async(response)=>{
+    if(response.error){toast('Google sign-in failed: '+response.error);return;}
+    accessToken=response.access_token;googleConnected=true;updateAccount();await loadCloudScores();
+  }});}
+  tokenClient.requestAccessToken({prompt:'consent'});
+}
+function signOut(){
+  if(accessToken&&window.google?.accounts?.oauth2)google.accounts.oauth2.revoke(accessToken,()=>{});
+  accessToken=null;driveFileId=null;googleConnected=false;updateAccount();toast('Disconnected from Google. Local scores are kept.');
+}
+async function driveRequest(url,options={}){
+  const response=await fetch(url,{...options,headers:{Authorization:'Bearer '+accessToken,...(options.headers||{})}});
+  if(!response.ok){const detail=await response.text();throw new Error('Google Drive error ('+response.status+'): '+detail.slice(0,220));}
+  if(response.status===204)return null;
+  return response.json();
+}
+async function findDriveScoreFile(){
+  const q=encodeURIComponent("name='pixel-plaza-scores.json' and trashed=false");
+  const result=await driveRequest('https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q='+q+'&fields=files(id,name)');
+  return result.files?.[0]||null;
+}
+async function writeDriveScores(){
+  if(!accessToken)return;
+  const body=JSON.stringify({scores,updatedAt:new Date().toISOString()});
+  if(!driveFileId){const found=await findDriveScoreFile();driveFileId=found?.id||null;}
+  if(driveFileId){
+    await driveRequest('https://www.googleapis.com/upload/drive/v3/files/'+driveFileId+'?uploadType=media',{method:'PATCH',headers:{'Content-Type':'application/json'},body});
+  }else{
+    const metadata={name:'pixel-plaza-scores.json',parents:['appDataFolder']};
+    const form=new FormData();form.append('metadata',new Blob([JSON.stringify(metadata)],{type:'application/json'}));form.append('file',new Blob([body],{type:'application/json'}));
+    const created=await driveRequest('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id',{method:'POST',body:form});driveFileId=created.id;
+  }
+}
+async function loadCloudScores(){
+  if(!accessToken)return;
+  try{
+    const found=await findDriveScoreFile();driveFileId=found?.id||null;
+    if(found){const cloud=await driveRequest('https://www.googleapis.com/drive/v3/files/'+driveFileId+'?alt=media');
+      if(cloud.scores)for(const game of games)scores[game]=Math.max(scores[game]||0,cloud.scores[game]||0);
+    }
+    localStorage.setItem('pixelPlazaScores',JSON.stringify(scores));updateTotals();
+    await writeDriveScores();toast('High scores synced with Google Drive!');
+  }catch(e){console.error(e);toast('Drive sync failed: '+e.message);}
+}
+async function saveScore(game,value,silent=false){
+  scores[game]=Math.max(scores[game]||0,Math.floor(value));
+  localStorage.setItem('pixelPlazaScores',JSON.stringify(scores));updateTotals();
+  if(accessToken){try{await writeDriveScores();}catch(e){console.warn(e);if(!silent)toast('Saved locally; Google Drive sync failed.');}}
+}
+function updateTotals(){let total=games.reduce((n,g)=>n+(scores[g]||0),0);document.getElementById('totalBest').textContent=total;}
+updateAccount();
+
+const canvas=document.getElementById('gameCanvas'),ctx=canvas.getContext('2d');
+let activeGame=null,loop=null,score=0,keys={},state={},lastTime=0;
+function startGame(name){activeGame=name;document.getElementById('homeScreen').style.display='none';document.getElementById('gameScreen').style.display='block';restartGame();}
+function goHome(){stopLoop();activeGame=null;document.getElementById('gameScreen').style.display='none';document.getElementById('homeScreen').style.display='block';}
+function stopLoop(){if(loop)cancelAnimationFrame(loop);loop=null;}
+function restartGame(){
+ stopLoop();score=0;keys={};document.getElementById('scoreText').textContent='Score: 0';
+ const titles={pong:'Neon Pong',drive:'Pixel Driver',snake:'Snake',breakout:'Brick Breaker'};
+ const help={pong:'Move with W / S or ↑ / ↓. On touch screens, drag on the canvas. First to 7 wins.',drive:'Steer with ← / → or A / D. Avoid the traffic. On touch screens, tap the left or right side.',snake:'Use arrow keys or WASD. On touch screens, swipe in the direction you want to move.',breakout:'Move with ← / → or A / D. On touch screens, drag your finger to move the paddle.'};
+ document.getElementById('gameTitle').textContent=titles[activeGame];document.getElementById('gameHelp').textContent=help[activeGame];
+ buildMobileControls();initState();lastTime=performance.now();loop=requestAnimationFrame(tick);
+}
+function buildMobileControls(){
+ const el=document.getElementById('mobileControls');el.innerHTML='';
+ if(activeGame==='pong'||activeGame==='drive'||activeGame==='breakout'){
+  const pairs=activeGame==='pong'?[['▲','up'],['▼','down']]:[['◀','left'],['▶','right']];
+  pairs.forEach(([label,key])=>{const b=document.createElement('button');b.className='secondary';b.textContent=label;b.onpointerdown=e=>{e.preventDefault();keys[key]=true};b.onpointerup=b.onpointerleave=()=>keys[key]=false;el.appendChild(b);});
+ }
+}
+function initState(){
+ if(activeGame==='pong')state={p1:210,p2:210,bx:450,by:253,vx:5,vy:3,p1s:0,p2s:0};
+ if(activeGame==='drive')state={car:450,traffic:[],distance:0,speed:4,spawn:0,over:false};
+ if(activeGame==='snake')state={body:[{x:10,y:8},{x:9,y:8},{x:8,y:8}],dir:{x:1,y:0},next:{x:1,y:0},food:{x:16,y:8},tick:0,over:false};
+ if(activeGame==='breakout'){let bricks=[];for(let r=0;r<5;r++)for(let c=0;c<11;c++)bricks.push({x:90+c*66,y:65+r*28,w:56,h:17,on:true});state={x:450,y:390,vx:4,vy:-4,paddle:450,bricks,lives:3,over:false};}
+}
+function tick(now){const dt=Math.min(2,(now-lastTime)/16.67);lastTime=now;draw();update(dt);loop=requestAnimationFrame(tick);}
+function setScore(v){score=Math.max(0,Math.floor(v));document.getElementById('scoreText').textContent='Score: '+score;}
+function endGame(message){if(state.over)return;state.over=true;saveScore(activeGame,score);overlay(message);}
+function overlay(message){ctx.fillStyle='#050916d9';ctx.fillRect(0,0,900,506);ctx.textAlign='center';ctx.fillStyle='#55e7ff';ctx.font='bold 42px system-ui';ctx.fillText(message,450,235);ctx.fillStyle='white';ctx.font='20px system-ui';ctx.fillText('Press Restart to play again',450,280);}
+function draw(){
+ ctx.clearRect(0,0,900,506);
+ if(activeGame==='pong')drawPong();if(activeGame==='drive')drawDrive();if(activeGame==='snake')drawSnake();if(activeGame==='breakout')drawBreakout();
+}
+function update(dt){
+ if(activeGame==='pong')updatePong(dt);if(activeGame==='drive')updateDrive(dt);if(activeGame==='snake')updateSnake(dt);if(activeGame==='breakout')updateBreakout(dt);
+}
+function drawPong(){
+ ctx.fillStyle='#080e20';ctx.fillRect(0,0,900,506);ctx.setLineDash([12,14]);ctx.strokeStyle='#263657';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(450,0);ctx.lineTo(450,506);ctx.stroke();ctx.setLineDash([]);
+ ctx.fillStyle='#55e7ff';ctx.fillRect(28,state.p1,14,90);ctx.fillStyle='#ff62bd';ctx.fillRect(858,state.p2,14,90);
+ ctx.fillStyle='white';ctx.shadowColor='#55e7ff';ctx.shadowBlur=18;ctx.beginPath();ctx.arc(state.bx,state.by,10,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+ ctx.font='bold 48px system-ui';ctx.fillStyle='#ffffff80';ctx.textAlign='center';ctx.fillText(state.p1s,340,65);ctx.fillText(state.p2s,560,65);
+}
+function updatePong(dt){
+ let s=state;if(keys.up)s.p1-=7*dt;if(keys.down)s.p1+=7*dt;s.p1=Math.max(0,Math.min(416,s.p1));
+ s.p2+=(s.by-(s.p2+45))*.055*dt;s.p2=Math.max(0,Math.min(416,s.p2));
+ s.bx+=s.vx*dt;s.by+=s.vy*dt;if(s.by<10||s.by>496)s.vy*=-1;
+ if(s.bx<48&&s.by>s.p1-8&&s.by<s.p1+98){s.vx=Math.abs(s.vx)*1.04;s.vy+=(s.by-(s.p1+45))*.035;}
+ if(s.bx>852&&s.by>s.p2-8&&s.by<s.p2+98){s.vx=-Math.abs(s.vx)*1.04;s.vy+=(s.by-(s.p2+45))*.035;}
+ if(s.bx<0){s.p2s++;s.bx=450;s.by=253;s.vx=5;s.vy=3;}if(s.bx>900){s.p1s++;s.bx=450;s.by=253;s.vx=-5;s.vy=3;}
+ setScore(s.p1s);if(s.p1s>=7)endGame('YOU WIN!');if(s.p2s>=7)endGame('CPU WINS');
+}
+function drawDrive(){
+ ctx.fillStyle='#101b24';ctx.fillRect(0,0,900,506);ctx.fillStyle='#263b31';ctx.fillRect(0,0,150,506);ctx.fillRect(750,0,150,506);
+ ctx.fillStyle='#343b4c';ctx.fillRect(150,0,600,506);ctx.fillStyle='#e6e6e6';for(let y=-40+(state.distance*2)%90;y<506;y+=90){ctx.fillRect(348,y,8,48);ctx.fillRect(544,y,8,48);}
+ ctx.fillStyle='#55e7ff';ctx.fillRect(state.car-22,390,44,75);ctx.fillStyle='#b8f7ff';ctx.fillRect(state.car-14,400,28,15);ctx.fillStyle='#101522';ctx.fillRect(state.car-26,450,9,17);ctx.fillRect(state.car+17,450,9,17);
+ state.traffic.forEach(t=>{ctx.fillStyle=t.color;ctx.fillRect(t.x-22,t.y,44,72);ctx.fillStyle='#fff';ctx.fillRect(t.x-14,t.y+8,28,13);});
+ ctx.fillStyle='white';ctx.font='bold 22px system-ui';ctx.textAlign='left';ctx.fillText('DISTANCE  '+Math.floor(state.distance),24,36);
+}
+function updateDrive(dt){
+ let s=state;if(s.over)return;if(keys.left)s.car-=7*dt;if(keys.right)s.car+=7*dt;s.car=Math.max(185,Math.min(715,s.car));
+ s.distance+=dt;s.speed=4+Math.min(7,s.distance/300);s.spawn+=dt;if(s.spawn>Math.max(22,55-s.speed*3)){s.spawn=0;let lanes=[245,450,655];s.traffic.push({x:lanes[Math.floor(Math.random()*3)],y:-80,color:['#ff62bd','#ffd66b','#9b83ff'][Math.floor(Math.random()*3)]});}
+ s.traffic.forEach(t=>t.y+=s.speed*dt);s.traffic=s.traffic.filter(t=>t.y<540);
+ for(const t of s.traffic)if(Math.abs(t.x-s.car)<39&&t.y<455&&t.y+72>390){endGame('CRASH!');break;}
+ setScore(s.distance*10);
+}
+function drawSnake(){
+ ctx.fillStyle='#071321';ctx.fillRect(0,0,900,506);for(let x=0;x<30;x++)for(let y=0;y<16;y++){ctx.strokeStyle='#15253b';ctx.strokeRect(x*30,y*30,30,30);}
+ ctx.fillStyle='#ff62bd';ctx.fillRect(state.food.x*30+4,state.food.y*30+4,22,22);state.body.forEach((p,i)=>{ctx.fillStyle=i?'#2cae9c':'#55e7ff';ctx.fillRect(p.x*30+2,p.y*30+2,26,26);});
+}
+function updateSnake(dt){
+ let s=state;if(s.over)return;s.tick+=dt;if(s.tick<7)return;s.tick=0;s.dir=s.next;
+ let head={x:s.body[0].x+s.dir.x,y:s.body[0].y+s.dir.y};
+ if(head.x<0||head.x>=30||head.y<0||head.y>=16||s.body.some(p=>p.x===head.x&&p.y===head.y)){endGame('GAME OVER');return;}
+ s.body.unshift(head);if(head.x===s.food.x&&head.y===s.food.y){setScore(score+10);s.food={x:Math.floor(Math.random()*30),y:Math.floor(Math.random()*16)};}else s.body.pop();
+}
+function setSnakeDir(x,y){if(x!==-state.dir.x||y!==-state.dir.y)state.next={x,y};}
+function drawBreakout(){
+ ctx.fillStyle='#090f22';ctx.fillRect(0,0,900,506);state.bricks.forEach((b,i)=>{if(!b.on)return;ctx.fillStyle=['#55e7ff','#9b83ff','#ff62bd','#ffd66b','#50d6a7'][Math.floor(i/11)];ctx.fillRect(b.x,b.y,b.w,b.h);});
+ ctx.fillStyle='white';ctx.beginPath();ctx.arc(state.x,state.y,9,0,Math.PI*2);ctx.fill();ctx.fillStyle='#55e7ff';ctx.fillRect(state.paddle-58,458,116,14);ctx.fillStyle='white';ctx.font='18px system-ui';ctx.textAlign='left';ctx.fillText('LIVES '+state.lives,20,490);
+}
+function updateBreakout(dt){
+ let s=state;if(s.over)return;if(keys.left)s.paddle-=8*dt;if(keys.right)s.paddle+=8*dt;s.paddle=Math.max(58,Math.min(842,s.paddle));
+ s.x+=s.vx*dt;s.y+=s.vy*dt;if(s.x<9||s.x>891)s.vx*=-1;if(s.y<9)s.vy*=-1;
+ if(s.y>449&&s.y<474&&s.x>s.paddle-65&&s.x<s.paddle+65){s.vy=-Math.abs(s.vy);s.vx+=(s.x-s.paddle)*.04;}
+ for(const b of s.bricks)if(b.on&&s.x>b.x&&s.x<b.x+b.w&&s.y>b.y&&s.y<b.y+b.h){b.on=false;s.vy*=-1;setScore(score+10);break;}
+ if(s.y>515){s.lives--;if(s.lives<=0)endGame('GAME OVER');else{s.x=450;s.y=390;s.vx=4;s.vy=-4;}}
+ if(s.bricks.every(b=>!b.on))endGame('YOU CLEARED IT!');
+}
+window.addEventListener('keydown',e=>{
+ const k=e.key.toLowerCase();if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))e.preventDefault();
+ if(k==='arrowup'||k==='w')keys.up=true;if(k==='arrowdown'||k==='s')keys.down=true;if(k==='arrowleft'||k==='a')keys.left=true;if(k==='arrowright'||k==='d')keys.right=true;
+ if(activeGame==='snake'&&['arrowup','w'].includes(k))setSnakeDir(0,-1);
+ if(activeGame==='snake'&&['arrowdown','s'].includes(k))setSnakeDir(0,1);
+ if(activeGame==='snake'&&['arrowleft','a'].includes(k))setSnakeDir(-1,0);
+ if(activeGame==='snake'&&['arrowright','d'].includes(k))setSnakeDir(1,0);
+});
+window.addEventListener('keyup',e=>{const k=e.key.toLowerCase();if(k==='arrowup'||k==='w')keys.up=false;if(k==='arrowdown'||k==='s')keys.down=false;if(k==='arrowleft'||k==='a')keys.left=false;if(k==='arrowright'||k==='d')keys.right=false;});
+canvas.addEventListener('pointermove',e=>{const r=canvas.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*900,y=(e.clientY-r.top)/r.height*506;
+ if(activeGame==='pong')state.p1=Math.max(0,Math.min(416,y-45));
+ if(activeGame==='breakout')state.paddle=Math.max(58,Math.min(842,x));
+});
+canvas.addEventListener('pointerdown',e=>{if(activeGame==='drive'){const r=canvas.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*900;keys.left=x<450;keys.right=x>=450;}});
+canvas.addEventListener('pointerup',()=>{keys.left=false;keys.right=false;});
+canvas.addEventListener('touchstart',e=>{
+ if(activeGame==='snake'){const t=e.changedTouches[0],r=canvas.getBoundingClientRect(),x=t.clientX-r.left-r.width/2,y=t.clientY-r.top-r.height/2;if(Math.abs(x)>Math.abs(y))setSnakeDir(x>0?1:-1,0);else setSnakeDir(0,y>0?1:-1);}
+},{passive:true});
+</script>
+</body>
+</html>
